@@ -23,7 +23,7 @@ export function TrackList() {
       .select("*")
       .order("dinlenme_sayisi", { ascending: false })
       .order("son_dinlenme", { ascending: false })
-      .limit(200);
+      .limit(100); // İlk 100 şarkı gösterilir. 100+ ileride premium ile açılacak.
 
     if (!error && data) {
       setTracks(data as Dinleme[]);
@@ -126,6 +126,16 @@ export function TrackList() {
             {tracks.map((t, i) => (
               <TrackRow key={t.id} track={t} sira={i + 1} />
             ))}
+
+            {/* 100 sınırına ulaşıldıysa: premium ipucu */}
+            {tracks.length >= 100 && (
+              <div className="mt-3 rounded-xl border border-dashed border-spodie-border px-4 py-4 text-center text-sm text-spodie-muted">
+                İlk <span className="font-semibold text-spodie-accent">100</span> şarkıyı
+                görüyorsun. Daha fazlası{" "}
+                <span className="font-semibold text-spodie-text">Premium</span> ile
+                yakında. 🔒
+              </div>
+            )}
           </div>
         )}
       </section>

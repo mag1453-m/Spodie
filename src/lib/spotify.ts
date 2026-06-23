@@ -1,6 +1,6 @@
 import { createServiceSupabase } from "./supabase";
 import { encrypt, decrypt } from "./crypto";
-import type { Kullanici, SpotifyNowPlaying } from "./types";
+import type { Kullanici, SpotifyNowPlaying, SpotifyRecentItem } from "./types";
 
 // ── Sabitler ────────────────────────────────────────────────
 const AUTH_URL = "https://accounts.spotify.com/authorize";
@@ -168,4 +168,24 @@ export async function getNowPlaying(accessToken: string): Promise<SpotifyNowPlay
   if (res.status === 204) return null;
   if (!res.ok) throw new Error(`currently-playing hata: ${res.status}`);
   return res.json();
+}
+
+// ── 8) Son çalınanlar (Spotify max 50 verir) ────────────────
+/**
+ * Son çalınan şarkılar. `after` verilirse o zamandan SONRAKİLER gelir (ms epoch).
+ * Cron iki yoklama arasında kaçırdığı şarkıları bununla yakalar.
+ */
+export async function getRecentlyPlayed(
+  accessToken: string,
+  afterMs?: number
+): Promise<SpotifyRecentItem[]> {
+  const params = new URLSearchParams({ limit: "50" });
+  if (afterMs) params.set("after", String(afterMs));
+  const res = await fetch(`${API_BASE}/me/player/recently-played?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`recently-played hata: ${res.status}`);
+  const data = await res.json();
+  return (data.items ?? []) as SpotifyRecentItem[];
 }

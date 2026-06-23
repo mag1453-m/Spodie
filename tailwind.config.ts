@@ -9,25 +9,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Spodie kendi kimlik paleti — Spotify/Discord renkleri DEĞİL.
-        // Ana vurgu: ametist moru + camgöbeği (teal) ikincil vurgu.
+        // Spodie kimlik paleti — yeşil + siyah.
+        // Spotify'ın birebir yeşili DEĞİL; daha parlak zümrüt/neon yeşil ton.
         spodie: {
-          bg: "#0d0b14", // çok koyu mor-siyah arka plan
-          surface: "#171326", // kart yüzeyi
-          surface2: "#211b38", // hover / yükseltilmiş yüzey
-          border: "#2c2545",
-          text: "#ece9f7",
-          muted: "#9c93c2",
-          accent: "#a86bff", // ametist mor (ana marka rengi)
-          accent2: "#3fd6c4", // teal (ikincil vurgu)
-          gold: "#ffcb6b", // #1 sıralama vurgusu
+          bg: "#070a08", // neredeyse siyah, hafif yeşilimsi
+          surface: "#0f1511", // kart yüzeyi
+          surface2: "#18211b", // hover / yükseltilmiş yüzey
+          border: "#223027",
+          text: "#e8f5ec",
+          muted: "#7d9c89",
+          accent: "#2ee66b", // ana yeşil (parlak zümrüt)
+          accent2: "#7dffb0", // açık yeşil (ikincil vurgu)
+          gold: "#c8ff5e", // #1 sıralama vurgusu (lime)
         },
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        glow: "0 0 40px -10px rgba(168, 107, 255, 0.45)",
+        glow: "0 0 40px -10px rgba(46, 230, 107, 0.5)",
       },
     },
   },

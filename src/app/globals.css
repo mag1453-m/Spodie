@@ -8,8 +8,8 @@
 
 html,
 body {
-  background-color: #0d0b14;
-  color: #ece9f7;
+  background-color: #070a08;
+  color: #e8f5ec;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -19,14 +19,14 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d0b14;
+  background: #070a08;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2c2545;
+  background: #223027;
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3158;
+  background: #2f4435;
 }
 
 /* Yumuşak giriş animasyonu */

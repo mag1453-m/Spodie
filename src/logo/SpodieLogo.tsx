@@ -15,12 +15,12 @@ export function SpodieLogo({ size = 40 }: { size?: number }) {
     >
       <defs>
         <linearGradient id="spodie-grad" x1="0" y1="0" x2="64" y2="64">
-          <stop offset="0%" stopColor="#a86bff" />
-          <stop offset="100%" stopColor="#3fd6c4" />
+          <stop offset="0%" stopColor="#2ee66b" />
+          <stop offset="100%" stopColor="#7dffb0" />
         </linearGradient>
       </defs>
       {/* Yuvarlak köşeli kare zemin */}
-      <rect width="64" height="64" rx="18" fill="#171326" />
+      <rect width="64" height="64" rx="18" fill="#0f1511" />
       <rect
         x="1.5"
         y="1.5"

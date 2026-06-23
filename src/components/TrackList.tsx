@@ -31,8 +31,20 @@ export function TrackList() {
     setYukleniyor(false);
   }, []);
 
+  // Takip motorunu tetikle (şu an çalanı yakala), sonra listeyi tazele.
+  // Site açık olduğu sürece bu sayede dinlemeler otomatik sayılır — elle tetikleme yok.
+  const tetikleVeCek = useCallback(async () => {
+    try {
+      await fetch("/api/tick", { cache: "no-store" });
+    } catch {
+      // tetikleme başarısız olsa bile listeyi yine de çekelim
+    }
+    await veriyiCek();
+  }, [veriyiCek]);
+
   useEffect(() => {
-    veriyiCek();
+    // İlk açılışta hem takibi tetikle hem listeyi çek
+    tetikleVeCek();
 
     const supabase = createBrowserSupabase();
 
@@ -46,14 +58,14 @@ export function TrackList() {
       )
       .subscribe();
 
-    // Yedek: realtime patlarsa 30 sn'de bir yine de güncelle
-    const interval = setInterval(veriyiCek, 30_000);
+    // Her 30 sn'de: takibi tetikle (çalanı yakala) + listeyi güncelle
+    const interval = setInterval(tetikleVeCek, 30_000);
 
     return () => {
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [veriyiCek]);
+  }, [veriyiCek, tetikleVeCek]);
 
   const toplamSarki = tracks.length;
   const toplamDinleme = tracks.reduce((t, x) => t + x.dinlenme_sayisi, 0);

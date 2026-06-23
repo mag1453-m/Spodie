@@ -24,6 +24,9 @@ yarn-error.log*
 .env.local
 .env*.local
 
+# İçinde gerçek CRON_SECRET olan canlı SQL — git'e GİTMEZ
+sql/03_cron_canli.sql
+
 # vercel
 .vercel
 

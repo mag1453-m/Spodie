@@ -67,8 +67,20 @@ export default async function Home({
       </div>
 
       {/* Alt bilgi */}
-      <footer className="mt-12 text-center text-xs text-spodie-muted">
-        Spodie · kişisel dinleme istatistikleri · Spotify Web API ile çalışır
+      <footer className="mt-12 flex flex-col items-center gap-2 text-center text-xs text-spodie-muted">
+        <p>Spodie · kişisel dinleme istatistikleri · Spotify Web API ile çalışır</p>
+        <p className="flex items-center gap-2">
+          <a href="/gizlilik" className="transition-colors hover:text-spodie-text">
+            Gizlilik
+          </a>
+          <span>·</span>
+          <a href="/sartlar" className="transition-colors hover:text-spodie-text">
+            Kullanım Şartları
+          </a>
+        </p>
+        <p className="text-spodie-muted/70">
+          Spotify ile bağlantılı, ortak veya onaylı değildir.
+        </p>
       </footer>
       </main>
     </>

@@ -20,6 +20,7 @@ export type Kullanici = {
   id: string; // Spotify user id
   display_name: string | null;
   avatar_url: string | null; // Spotify profil resmi
+  premium: boolean; // premium üye mi
   refresh_token: string; // şifreli saklanır
   access_token: string | null; // şifreli, kısa ömürlü
   access_token_expires_at: string | null; // ISO timestamp
@@ -42,6 +43,25 @@ export type SpotifyRecentItem = {
     };
   };
 };
+
+/** Spotify "top tracks" öğesi (en çok dinlenen şarkı). */
+export type TopTrack = {
+  id: string;
+  isim: string;
+  sanatci: string;
+  kapak_url: string | null;
+};
+
+/** Spotify "top artists" öğesi (en çok dinlenen sanatçı). */
+export type TopArtist = {
+  id: string;
+  isim: string;
+  resim_url: string | null;
+  tur: string | null; // birincil müzik türü
+};
+
+/** Top Items zaman aralığı. */
+export type TopAralik = "kisa" | "orta" | "uzun"; // 4 hafta / 6 ay / tüm zamanlar
 
 /** Spotify "currently playing" yanıtının kullandığımız kısmı. */
 export type SpotifyNowPlaying = {

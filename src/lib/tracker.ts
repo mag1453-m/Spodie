@@ -1,5 +1,5 @@
 import { createServiceSupabase } from "./supabase";
-import { getValidAccessToken, getNowPlaying, getRecentlyPlayed } from "./spotify";
+import { getValidAccessToken, getRecentlyPlayed } from "./spotify";
 import type { Kullanici } from "./types";
 
 // Bir şarkının "dinlendi" sayılması için gereken minimum süre (ms)
@@ -34,59 +34,13 @@ export async function takipTuru(): Promise<{
 
 /** Tek bir kullanıcı için bir tur işle. */
 async function isleKullanici(user: Kullanici): Promise<string> {
-  const supabase = createServiceSupabase();
   const accessToken = await getValidAccessToken(user);
 
-  // ── 1) ÖNCE: son çalınanları yakala (site/bilgisayar kapalıyken kaçanlar dahil) ──
-  // Bu sayede cron, iki yoklama arasında telefonda/başka yerde dinlediklerini de toplar.
-  await isleRecentlyPlayed(user, accessToken);
-
-  // ── 2) SONRA: şu an çalanı işle (40sn eşiği için anlık takip) ──
-  const np = await getNowPlaying(accessToken);
-
-  // Hiçbir şey çalmıyor → izlemeyi temizle (yeni başlangıçlar sayılabilsin)
-  if (!np || !np.item || !np.is_playing) {
-    if (user.son_calan_track_id !== null) {
-      await supabase
-        .from("kullanicilar")
-        .update({ son_calan_track_id: null, son_calan_progress_ms: null })
-        .eq("id", user.id);
-    }
-    return "calmiyor";
-  }
-
-  const trackId = np.item.id;
-  const progress = np.progress_ms ?? 0;
-  const oncekiTrack = user.son_calan_track_id;
-  const oncekiProgress = user.son_calan_progress_ms ?? 0;
-
-  // Yeni oynatma: track değişti VEYA aynı track baştan başladı (progress geriye gitti)
-  const yeniOynatma = trackId !== oncekiTrack || progress < oncekiProgress - 2000;
-  // Bu oynatmada zaten saydık mı?
-  const oncedenSayildi =
-    trackId === oncekiTrack && !yeniOynatma && oncekiProgress >= DINLENDI_ESIGI_MS;
-
-  let durum = "izleniyor";
-  if (progress >= DINLENDI_ESIGI_MS && !oncedenSayildi) {
-    const sanatci = np.item.artists.map((a) => a.name).join(", ");
-    const kapak = np.item.album.images?.[0]?.url ?? null;
-    const { error } = await supabase.rpc("dinleme_kaydet", {
-      p_kullanici_id: user.id,
-      p_track_id: trackId,
-      p_sarki_adi: np.item.name,
-      p_sanatci: sanatci,
-      p_kapak_url: kapak,
-    });
-    if (error) throw new Error(`dinleme_kaydet: ${error.message}`);
-    durum = "sayildi";
-  }
-
-  await supabase
-    .from("kullanicilar")
-    .update({ son_calan_track_id: trackId, son_calan_progress_ms: progress })
-    .eq("id", user.id);
-
-  return durum;
+  // Takip SADECE recently-played ile yapılıyor (Spotify zaten 30sn+ çalınanları
+  // "dinlenmiş" sayar). currently-playing'i ÇEKMİYORUZ → istek sayısı yarıya iner,
+  // 429 (rate limit) riski düşer. Bir şarkı bittiğinde recently-played onu yakalar.
+  const sayilan = await isleRecentlyPlayed(user, accessToken);
+  return sayilan > 0 ? "sayildi" : "izleniyor";
 }
 
 /**
@@ -94,45 +48,31 @@ async function isleKullanici(user: Kullanici): Promise<string> {
  * (genelde 30sn+ çalınanlar), o yüzden burada eşik kontrolü yok — gelen her şey sayılır.
  * `son_recent_played_at`'ten sonrasını çekeriz, böylece aynı şarkı tekrar tekrar sayılmaz.
  */
-async function isleRecentlyPlayed(user: Kullanici, accessToken: string): Promise<void> {
+async function isleRecentlyPlayed(user: Kullanici, accessToken: string): Promise<number> {
   const supabase = createServiceSupabase();
 
-  const afterMs = user.son_recent_played_at
-    ? new Date(user.son_recent_played_at).getTime()
-    : undefined;
+  // Spotify'ın verdiği son 50 dinlemeyi al. Filtrelemeye GÜVENMİYORUZ —
+  // her olayı (track_id + played_at) benzersiz olarak eklemeyi deniyoruz.
+  // Zaten kayıtlı olan (aynı an) çakışıp atlanır → ŞİŞME OLMAZ.
+  const items = await getRecentlyPlayed(accessToken);
+  if (items.length === 0) return 0;
 
-  const items = await getRecentlyPlayed(accessToken, afterMs);
-  if (items.length === 0) return;
-
-  // Eskiden yeniye doğru işleyelim ki en yeni played_at en sona yazılsın
-  const sirali = [...items].sort(
-    (a, b) => new Date(a.played_at).getTime() - new Date(b.played_at).getTime()
-  );
-
-  let enYeni = afterMs ?? 0;
-  for (const it of sirali) {
-    const playedMs = new Date(it.played_at).getTime();
-    // afterMs verdiysek Spotify zaten sonrasını döndürür; yine de emniyet için kontrol
-    if (afterMs && playedMs <= afterMs) continue;
-
+  let sayilan = 0;
+  for (const it of items) {
     const sanatci = it.track.artists.map((a) => a.name).join(", ");
     const kapak = it.track.album.images?.[0]?.url ?? null;
-    const { error } = await supabase.rpc("dinleme_kaydet", {
+
+    const { data, error } = await supabase.rpc("dinleme_olay_ekle", {
       p_kullanici_id: user.id,
       p_track_id: it.track.id,
       p_sarki_adi: it.track.name,
       p_sanatci: sanatci,
       p_kapak_url: kapak,
+      p_played_at: it.played_at,
     });
-    if (error) throw new Error(`recently dinleme_kaydet: ${error.message}`);
-    if (playedMs > enYeni) enYeni = playedMs;
+    if (error) throw new Error(`dinleme_olay_ekle: ${error.message}`);
+    if (data === true) sayilan++; // sadece gerçekten YENİ olaylar sayılır
   }
 
-  // Son çekim noktasını ilerlet
-  if (enYeni > (afterMs ?? 0)) {
-    await supabase
-      .from("kullanicilar")
-      .update({ son_recent_played_at: new Date(enYeni).toISOString() })
-      .eq("id", user.id);
-  }
+  return sayilan;
 }

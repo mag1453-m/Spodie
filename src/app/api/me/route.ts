@@ -18,25 +18,12 @@ export async function GET(req: NextRequest) {
 
   const supabase = createServiceSupabase();
 
-  // avatar_url kolonu henüz eklenmemiş olabilir → önce onunla dene, hata olursa onsuz.
-  let data: { id: string; display_name: string | null; avatar_url?: string | null } | null = null;
-  const ilk = await supabase
+  // select("*") → hangi kolonlar varsa gelir (avatar_url/premium henüz yoksa bile kırılmaz)
+  const { data } = await supabase
     .from("kullanicilar")
-    .select("id, display_name, avatar_url")
+    .select("*")
     .eq("id", userId)
     .maybeSingle();
-
-  if (ilk.error) {
-    // Büyük ihtimal "column avatar_url does not exist" → avatarsız tekrar dene
-    const yedek = await supabase
-      .from("kullanicilar")
-      .select("id, display_name")
-      .eq("id", userId)
-      .maybeSingle();
-    data = yedek.data;
-  } else {
-    data = ilk.data;
-  }
 
   if (!data) {
     // Çerez var ama kullanıcı DB'de yok (silinmiş olabilir) → giriş yok say
@@ -48,6 +35,7 @@ export async function GET(req: NextRequest) {
       id: data.id,
       display_name: data.display_name,
       avatar_url: data.avatar_url ?? null,
+      premium: data.premium ?? false,
     },
   });
 }

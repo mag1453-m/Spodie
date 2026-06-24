@@ -16,17 +16,39 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = createServiceSupabase();
+
+  // Premium mi? (kolon yoksa false)
+  const { data: u } = await supabase
+    .from("kullanicilar")
+    .select("*")
+    .eq("id", userId)
+    .maybeSingle();
+  const premium = u?.premium ?? false;
+
+  // Toplam farklı şarkı sayısı (kilitli kaç şarkı var bilgisini UI'a vermek için)
+  const { count: toplam } = await supabase
+    .from("dinlemeler")
+    .select("*", { count: "exact", head: true })
+    .eq("kullanici_id", userId);
+
+  // Ücretsiz: ilk 100 — Premium: sınırsız
+  const LIMIT = premium ? 100000 : 100;
   const { data, error } = await supabase
     .from("dinlemeler")
     .select("*")
     .eq("kullanici_id", userId)
     .order("dinlenme_sayisi", { ascending: false })
     .order("son_dinlenme", { ascending: false })
-    .limit(100); // ilk 100 (100+ premium)
+    .limit(LIMIT);
 
   if (error) {
     return NextResponse.json({ giris: true, hata: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ giris: true, dinlemeler: data ?? [] });
+  return NextResponse.json({
+    giris: true,
+    premium,
+    toplam: toplam ?? (data?.length ?? 0),
+    dinlemeler: data ?? [],
+  });
 }

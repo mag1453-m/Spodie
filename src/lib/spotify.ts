@@ -1,6 +1,13 @@
 import { createServiceSupabase } from "./supabase";
 import { encrypt, decrypt } from "./crypto";
-import type { Kullanici, SpotifyNowPlaying, SpotifyRecentItem } from "./types";
+import type {
+  Kullanici,
+  SpotifyNowPlaying,
+  SpotifyRecentItem,
+  TopTrack,
+  TopArtist,
+  TopAralik,
+} from "./types";
 
 // ── Sabitler ────────────────────────────────────────────────
 const AUTH_URL = "https://accounts.spotify.com/authorize";
@@ -11,6 +18,7 @@ export const SPOTIFY_SCOPES = [
   "user-read-currently-playing",
   "user-read-recently-played",
   "user-read-playback-state",
+  "user-top-read", // Spotify'ın "en çok dinlenen" (top) şarkı/sanatçı verisi
 ].join(" ");
 
 function env(name: string): string {
@@ -93,10 +101,27 @@ export async function getSpotifyProfile(accessToken: string): Promise<{
   display_name: string | null;
   avatar_url: string | null;
 }> {
-  const res = await fetch(`${API_BASE}/me`, {
+  // 429 (rate limit) gelirse Retry-After kadar bekleyip 1 kez daha dene.
+  let res = await fetch(`${API_BASE}/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) throw new Error(`Profil alınamadı: ${res.status}`);
+
+  if (res.status === 429) {
+    const retry = Number(res.headers.get("retry-after") ?? "2");
+    // Çok uzun beklemeyi engelle (en fazla 8 sn) — kullanıcıyı bekletmeyelim
+    const bekle = Math.min(Math.max(retry, 1), 8) * 1000;
+    await new Promise((r) => setTimeout(r, bekle));
+    res = await fetch(`${API_BASE}/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  }
+
+  if (!res.ok) {
+    if (res.status === 429) {
+      throw new Error("Spotify şu an çok yoğun (429). Lütfen birkaç dakika sonra tekrar dene.");
+    }
+    throw new Error(`Profil alınamadı: ${res.status}`);
+  }
   const data = await res.json();
   return {
     id: data.id,
@@ -205,3 +230,70 @@ export async function getRecentlyPlayed(
   const data = await res.json();
   return (data.items ?? []) as SpotifyRecentItem[];
 }
+
+// ── 9) Spotify Top Items (en çok dinlenen şarkı/sanatçı) ────
+// Spotify'ın kendi hesabından gelir; kullanıcı bağlanır bağlanmaz hazır.
+// time_range: short_term (~4 hafta), medium_term (~6 ay), long_term (tüm zamanlar)
+const ARALIK_MAP: Record<TopAralik, string> = {
+  kisa: "short_term",
+  orta: "medium_term",
+  uzun: "long_term",
+};
+
+export async function getTopTracks(
+  accessToken: string,
+  aralik: TopAralik
+): Promise<TopTrack[]> {
+  const params = new URLSearchParams({
+    limit: "50",
+    time_range: ARALIK_MAP[aralik],
+  });
+  const res = await fetch(`${API_BASE}/me/top/tracks?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`top-tracks hata: ${res.status}`);
+  const data = await res.json();
+  return ((data.items ?? []) as SpotifyTopTrackRaw[]).map((t) => ({
+    id: t.id,
+    isim: t.name,
+    sanatci: t.artists.map((a) => a.name).join(", "),
+    kapak_url: t.album.images?.[0]?.url ?? null,
+  }));
+}
+
+export async function getTopArtists(
+  accessToken: string,
+  aralik: TopAralik
+): Promise<TopArtist[]> {
+  const params = new URLSearchParams({
+    limit: "50",
+    time_range: ARALIK_MAP[aralik],
+  });
+  const res = await fetch(`${API_BASE}/me/top/artists?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`top-artists hata: ${res.status}`);
+  const data = await res.json();
+  return ((data.items ?? []) as SpotifyTopArtistRaw[]).map((a) => ({
+    id: a.id,
+    isim: a.name,
+    resim_url: a.images?.[0]?.url ?? null,
+    tur: a.genres?.[0] ?? null,
+  }));
+}
+
+// Spotify ham yanıt tipleri (yalnızca kullandığımız alanlar)
+type SpotifyTopTrackRaw = {
+  id: string;
+  name: string;
+  artists: { name: string }[];
+  album: { images: { url: string }[] };
+};
+type SpotifyTopArtistRaw = {
+  id: string;
+  name: string;
+  images: { url: string }[];
+  genres: string[];
+};

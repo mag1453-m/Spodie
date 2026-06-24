@@ -26,11 +26,12 @@ function Tac({ className = "" }: { className?: string }) {
   );
 }
 
-// Premium gerektiren menü öğeleri (taçlı). İleride bunları gerçek sayfalara bağlarız.
+// Premium menü öğeleri (taçlı) — her biri kendi sayfasına gider.
+// Premium değilse sayfa zaten kilit kutusu gösterir.
 const PREMIUM_OGELER = [
-  { ad: "Tüm şarkılar", aciklama: "İlk 100 değil, dinlediğin her şarkı" },
-  { ad: "Sanatçı sıralaması", aciklama: "En çok dinlediğin sanatçılar (tüm zamanlar)" },
-  { ad: "İstatistikler", aciklama: "Grafikler, haftalık/aylık özetler" },
+  { ad: "Tüm şarkılar", href: "/sarkilar", aciklama: "Spotify'da en çok dinlediğin şarkılar" },
+  { ad: "Sanatçı sıralaması", href: "/sanatcilar", aciklama: "En çok dinlediğin sanatçılar" },
+  { ad: "İstatistikler", href: "/istatistikler", aciklama: "Detaylı dinleme dökümün" },
 ];
 
 export function MenuBar() {
@@ -38,6 +39,7 @@ export function MenuBar() {
   const [kullanici, setKullanici] = useState<{
     display_name: string | null;
     avatar_url: string | null;
+    premium?: boolean;
   } | null>(null);
   const [profilAcik, setProfilAcik] = useState(false);
 
@@ -46,6 +48,13 @@ export function MenuBar() {
       .then((r) => r.json())
       .then((j) => setKullanici(j.user))
       .catch(() => {});
+  }, []);
+
+  // Sayfanın başka yerinden (liste kilidi gibi) premium kutusu açma isteği
+  useEffect(() => {
+    const ac = () => setAcikOzellik("Premium");
+    window.addEventListener("spodie:premium", ac);
+    return () => window.removeEventListener("spodie:premium", ac);
   }, []);
 
   // Dropdown dışına tıklayınca kapansın.
@@ -78,14 +87,14 @@ export function MenuBar() {
             {/* Premium öğeler — taşarsa yatay kayar */}
             <div className="flex items-center gap-1 overflow-x-auto">
               {PREMIUM_OGELER.map((o) => (
-                <button
+                <a
                   key={o.ad}
-                  onClick={() => setAcikOzellik(o.ad)}
+                  href={o.href}
                   className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-spodie-muted transition hover:bg-spodie-surface2 hover:text-spodie-text"
                 >
                   <Tac className="text-spodie-gold" />
                   <span className="whitespace-nowrap">{o.ad}</span>
-                </button>
+                </a>
               ))}
             </div>
 
@@ -151,17 +160,24 @@ export function MenuBar() {
                       Spotify&apos;a git
                     </a>
 
-                    {/* Planı yükselt */}
-                    <button
-                      onClick={() => {
-                        setProfilAcik(false);
-                        setAcikOzellik("Premium");
-                      }}
-                      className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-spodie-text transition hover:bg-spodie-surface2"
-                    >
-                      <Tac className="text-spodie-gold" />
-                      Planı yükselt
-                    </button>
+                    {/* Premium durumu */}
+                    {kullanici.premium ? (
+                      <div className="flex items-center gap-2.5 px-4 py-3 text-sm text-spodie-gold">
+                        <Tac className="text-spodie-gold" />
+                        Premium üyesin ✓
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setProfilAcik(false);
+                          setAcikOzellik("Premium");
+                        }}
+                        className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm text-spodie-text transition hover:bg-spodie-surface2"
+                      >
+                        <Tac className="text-spodie-gold" />
+                        Planı yükselt
+                      </button>
+                    )}
 
                     {/* Çıkış */}
                     <a
@@ -199,16 +215,21 @@ export function MenuBar() {
               {acikOzellik === "Premium" ? "Daha fazlası için" : "Premium özellik"}
             </p>
             {acikOzellik === "Premium" ? (
-              <ul className="mb-5 space-y-2 text-left text-sm text-spodie-text">
-                {PREMIUM_OGELER.map((o) => (
-                  <li key={o.ad} className="flex items-start gap-2">
-                    <span className="mt-0.5 text-spodie-accent2">✓</span>
-                    <span>
-                      <span className="font-semibold">{o.ad}</span> — {o.aciklama}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="mb-4 space-y-2 text-left text-sm text-spodie-text">
+                  {PREMIUM_OGELER.map((o) => (
+                    <li key={o.ad} className="flex items-start gap-2">
+                      <span className="mt-0.5 text-spodie-accent2">✓</span>
+                      <span>
+                        <span className="font-semibold">{o.ad}</span> — {o.aciklama}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mb-5 rounded-lg bg-spodie-surface2 px-3 py-2 text-xs text-spodie-muted">
+                  Premium şu an erken aşamada. Açtırmak için bizimle iletişime geç.
+                </p>
+              </>
             ) : (
               <p className="mb-5 text-sm text-spodie-muted">
                 {PREMIUM_OGELER.find((o) => o.ad === acikOzellik)?.aciklama}

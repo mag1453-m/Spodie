@@ -2,7 +2,15 @@ import Image from "next/image";
 import type { Dinleme } from "@/lib/types";
 
 /** En çok dinlenen listesinde tek bir satır. */
-export function TrackRow({ track, sira }: { track: Dinleme; sira: number }) {
+export function TrackRow({
+  track,
+  sira,
+  sayiGizle = false, // Spotify top modunda dinlenme sayısı yok → gizle
+}: {
+  track: Dinleme;
+  sira: number;
+  sayiGizle?: boolean;
+}) {
   // İlk 3 sıraya özel renk vurgusu
   const siraRengi =
     sira === 1
@@ -51,13 +59,15 @@ export function TrackRow({ track, sira }: { track: Dinleme; sira: number }) {
         <div className="truncate text-sm text-spodie-muted">{track.sanatci}</div>
       </div>
 
-      {/* Dinlenme sayısı */}
-      <div className="shrink-0 text-right">
-        <div className="text-lg font-bold tabular-nums text-spodie-text">
-          {track.dinlenme_sayisi}
+      {/* Dinlenme sayısı (Spotify top modunda gizli — orada sayı yok, sıra yeterli) */}
+      {!sayiGizle && (
+        <div className="shrink-0 text-right">
+          <div className="text-lg font-bold tabular-nums text-spodie-text">
+            {track.dinlenme_sayisi}
+          </div>
+          <div className="text-xs text-spodie-muted">dinlenme</div>
         </div>
-        <div className="text-xs text-spodie-muted">dinlenme</div>
-      </div>
+      )}
     </div>
   );
 }

@@ -62,19 +62,3 @@ export type TopArtist = {
 
 /** Top Items zaman aralığı. */
 export type TopAralik = "kisa" | "orta" | "uzun"; // 4 hafta / 6 ay / tüm zamanlar
-
-/** Spotify "currently playing" yanıtının kullandığımız kısmı. */
-export type SpotifyNowPlaying = {
-  is_playing: boolean;
-  progress_ms: number;
-  item: {
-    id: string;
-    name: string;
-    duration_ms: number;
-    artists: { name: string }[];
-    album: {
-      name: string;
-      images: { url: string; width: number; height: number }[];
-    };
-  } | null;
-};

@@ -2,7 +2,6 @@ import { createServiceSupabase } from "./supabase";
 import { encrypt, decrypt } from "./crypto";
 import type {
   Kullanici,
-  SpotifyNowPlaying,
   SpotifyRecentItem,
   TopTrack,
   TopArtist,
@@ -199,30 +198,13 @@ export async function getValidAccessToken(user: Kullanici): Promise<string> {
   return tok.access_token;
 }
 
-// ── 7) Şu an çalan şarkı ────────────────────────────────────
-export async function getNowPlaying(accessToken: string): Promise<SpotifyNowPlaying | null> {
-  const res = await fetch(`${API_BASE}/me/player/currently-playing`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-  });
-  // 204 = şu an hiçbir şey çalmıyor
-  if (res.status === 204) return null;
-  if (!res.ok) throw new Error(`currently-playing hata: ${res.status}`);
-  return res.json();
-}
-
-// ── 8) Son çalınanlar (Spotify max 50 verir) ────────────────
+// ── 7) Son çalınanlar (Spotify max 50 verir) ────────────────
 /**
- * Son çalınan şarkılar. `after` verilirse o zamandan SONRAKİLER gelir (ms epoch).
- * Cron iki yoklama arasında kaçırdığı şarkıları bununla yakalar.
+ * Son çalınan şarkılar (Spotify son 50 dinlemeyi verir).
+ * Her olay (track_id + played_at) tracker'da tekil olarak işlenir.
  */
-export async function getRecentlyPlayed(
-  accessToken: string,
-  afterMs?: number
-): Promise<SpotifyRecentItem[]> {
-  const params = new URLSearchParams({ limit: "50" });
-  if (afterMs) params.set("after", String(afterMs));
-  const res = await fetch(`${API_BASE}/me/player/recently-played?${params.toString()}`, {
+export async function getRecentlyPlayed(accessToken: string): Promise<SpotifyRecentItem[]> {
+  const res = await fetch(`${API_BASE}/me/player/recently-played?limit=50`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
@@ -231,7 +213,7 @@ export async function getRecentlyPlayed(
   return (data.items ?? []) as SpotifyRecentItem[];
 }
 
-// ── 9) Spotify Top Items (en çok dinlenen şarkı/sanatçı) ────
+// ── 8) Spotify Top Items (en çok dinlenen şarkı/sanatçı) ────
 // Spotify'ın kendi hesabından gelir; kullanıcı bağlanır bağlanmaz hazır.
 // time_range: short_term (~4 hafta), medium_term (~6 ay), long_term (tüm zamanlar)
 const ARALIK_MAP: Record<TopAralik, string> = {

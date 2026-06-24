@@ -2,9 +2,6 @@ import { createServiceSupabase } from "./supabase";
 import { getValidAccessToken, getRecentlyPlayed } from "./spotify";
 import type { Kullanici } from "./types";
 
-// Bir şarkının "dinlendi" sayılması için gereken minimum süre (ms)
-export const DINLENDI_ESIGI_MS = 40_000;
-
 /** Tüm kullanıcılar için bir takip turu çalıştır. */
 export async function takipTuru(): Promise<{
   islenen: number;

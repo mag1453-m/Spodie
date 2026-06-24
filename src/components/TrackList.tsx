@@ -32,21 +32,13 @@ export function TrackList() {
     setYukleniyor(false);
   }, []);
 
-  // Takip motorunu tetikle (şu an çalanı yakala), sonra listeyi tazele.
-  const tetikleVeCek = useCallback(async () => {
-    try {
-      await fetch("/api/tick", { cache: "no-store" });
-    } catch {
-      // tetikleme başarısız olsa bile listeyi yine de çekelim
-    }
-    await veriyiCek();
-  }, [veriyiCek]);
-
+  // Takip artık SADECE Supabase cron'un işi (her dakika). Site açıkken Spotify'ı
+  // ayrıca tetiklemiyoruz (429 riski). Burada sadece DB'den veriyi tazeliyoruz.
   useEffect(() => {
-    tetikleVeCek();
-    const interval = setInterval(tetikleVeCek, 30_000);
+    veriyiCek();
+    const interval = setInterval(veriyiCek, 30_000);
     return () => clearInterval(interval);
-  }, [tetikleVeCek]);
+  }, [veriyiCek]);
 
   const toplamSarki = tracks.length;
   const toplamDinleme = tracks.reduce((t, x) => t + x.dinlenme_sayisi, 0);

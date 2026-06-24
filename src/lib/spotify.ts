@@ -199,15 +199,29 @@ export async function getValidAccessToken(user: Kullanici): Promise<string> {
 }
 
 // ── 7) Son çalınanlar (Spotify max 50 verir) ────────────────
+/** Spotify "yavaşla" (429) dediğinde fırlatılır — tracker bu kullanıcıyı atlar. */
+export class RateLimitHatasi extends Error {
+  constructor(public retryAfter: number) {
+    super(`Spotify rate limit (429), Retry-After: ${retryAfter}s`);
+    this.name = "RateLimitHatasi";
+  }
+}
+
 /**
  * Son çalınan şarkılar (Spotify son 50 dinlemeyi verir).
  * Her olay (track_id + played_at) tracker'da tekil olarak işlenir.
+ * 429 gelirse `RateLimitHatasi` fırlatır — tracker o kullanıcıyı sessizce atlar,
+ * böylece ceza birikmez (boşuna istek atıp süreyi uzatmayız).
  */
 export async function getRecentlyPlayed(accessToken: string): Promise<SpotifyRecentItem[]> {
   const res = await fetch(`${API_BASE}/me/player/recently-played?limit=50`, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
   });
+  if (res.status === 429) {
+    const retry = Number(res.headers.get("retry-after") ?? "60");
+    throw new RateLimitHatasi(Number.isFinite(retry) ? retry : 60);
+  }
   if (!res.ok) throw new Error(`recently-played hata: ${res.status}`);
   const data = await res.json();
   return (data.items ?? []) as SpotifyRecentItem[];

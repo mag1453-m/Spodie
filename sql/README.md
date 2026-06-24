@@ -6,7 +6,7 @@ Sıfırdan kurarken **sırayla** çalıştır (Supabase → SQL Editor → her d
 |------|-------|----------|
 | 1 | `01_schema.sql` | Ana tablolar (`kullanicilar`, `dinlemeler`), RLS, realtime |
 | 2 | `02_recently_played.sql` | `son_recent_played_at` kolonu |
-| 3 | `03_cron_canli.sql` | ⚠️ **Gizli** (CRON_SECRET içerir, git'te yok). Her dakika `/api/track` çağıran cron |
+| 3 | `03_cron_canli.sql` | ⚠️ **Gizli** (CRON_SECRET içerir, git'te yok). Her **5 dakikada** `/api/track` çağıran cron (429/ban riskini düşürmek için) |
 | 4 | `04_ilk_dinlenme.sql` | "İlk dinlediğin şarkı" için `ilk_dinlenme` kolonu |
 | 5 | `05_kisiye_ozel_rls.sql` | Public okumayı kapat (veri kişiye özel) |
 | 6 | `06_avatar.sql` | Profil fotoğrafı (`avatar_url`) kolonu |

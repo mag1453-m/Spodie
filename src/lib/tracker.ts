@@ -1,5 +1,5 @@
 import { createServiceSupabase } from "./supabase";
-import { getValidAccessToken, getRecentlyPlayed } from "./spotify";
+import { getValidAccessToken, getRecentlyPlayed, RateLimitHatasi } from "./spotify";
 import type { Kullanici } from "./types";
 
 /** Tüm kullanıcılar için bir takip turu çalıştır. */
@@ -21,6 +21,13 @@ export async function takipTuru(): Promise<{
       if (durum === "sayildi") sayildi++;
       sonuc.push({ kullanici: user.id, durum });
     } catch (e) {
+      // 429: Spotify "yavaşla" diyor. Israr etmek cezayı UZATIR — bu turu hemen
+      // bitiriyoruz (kalan kullanıcılara da istek atmıyoruz). Bir sonraki cron
+      // (5 dk sonra) tekrar dener; o zamana kadar süre dolmuş olur.
+      if (e instanceof RateLimitHatasi) {
+        sonuc.push({ kullanici: user.id, durum: `atlandi: 429 (${e.retryAfter}s)` });
+        break;
+      }
       const msg = e instanceof Error ? e.message : "hata";
       sonuc.push({ kullanici: user.id, durum: `hata: ${msg}` });
     }

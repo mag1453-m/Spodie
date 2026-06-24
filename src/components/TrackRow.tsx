@@ -13,22 +13,30 @@ export function TrackRow({ track, sira }: { track: Dinleme; sira: number }) {
           ? "text-spodie-accent"
           : "text-spodie-muted";
 
+  // İlk satırlar sırayla belirsin (stagger). Çok satırda gecikme birikmesin diye sınır.
+  const gecikme = sira <= 20 ? `${(sira - 1) * 0.04}s` : "0s";
+
   return (
-    <div className="group flex items-center gap-4 rounded-xl px-3 py-2.5 transition hover:bg-spodie-surface2">
+    <div
+      className="group flex animate-slidein items-center gap-4 rounded-xl px-3 py-2.5 transition-colors duration-200 hover:bg-spodie-surface2"
+      style={{ animationDelay: gecikme }}
+    >
       {/* Sıra numarası */}
-      <div className={`w-7 shrink-0 text-center text-lg font-bold tabular-nums ${siraRengi}`}>
+      <div
+        className={`w-7 shrink-0 text-center text-lg font-bold tabular-nums transition-transform duration-200 group-hover:scale-110 ${siraRengi}`}
+      >
         {sira}
       </div>
 
       {/* Albüm kapağı */}
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-spodie-surface2">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-spodie-surface2 shadow-sm transition-transform duration-200 group-hover:scale-105">
         {track.kapak_url ? (
           <Image
             src={track.kapak_url}
             alt={track.sarki_adi}
             fill
             sizes="48px"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-spodie-muted">

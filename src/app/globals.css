@@ -29,11 +29,13 @@ body {
   background: #2f4435;
 }
 
-/* Yumuşak giriş animasyonu */
+/* ───────── Animasyonlar ───────── */
+
+/* Aşağıdan yumuşak giriş */
 @keyframes fadeup {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -41,5 +43,113 @@ body {
   }
 }
 .animate-fadeup {
-  animation: fadeup 0.4s ease both;
+  animation: fadeup 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Soldan kayarak giriş (liste satırları için) */
+@keyframes slidein {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-slidein {
+  animation: slidein 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Büyüyerek beliren (modal / kart) */
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-popin {
+  animation: popin 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Gradyan kayması (başlık metni canlı görünsün) */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.animate-gradient {
+  background-size: 200% auto;
+  animation: gradient-shift 6s ease infinite;
+}
+
+/* Logo için hafif nabız + parıltı */
+@keyframes pulse-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0px rgba(46, 230, 107, 0));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(46, 230, 107, 0.45));
+    transform: scale(1.04);
+  }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 3.5s ease-in-out infinite;
+}
+
+/* Yükleniyor iskeleti için shimmer (kayan parıltı) */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #18211b 0%,
+    #223027 50%,
+    #18211b 100%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Sıraya göre gecikme yardımcıları (stagger) */
+.delay-1 {
+  animation-delay: 0.05s;
+}
+.delay-2 {
+  animation-delay: 0.1s;
+}
+.delay-3 {
+  animation-delay: 0.15s;
+}
+.delay-4 {
+  animation-delay: 0.2s;
+}
+
+/* Erişilebilirlik: hareketi azalt tercihi olanlar için kapat */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -12,12 +12,14 @@ export type Dinleme = {
   kapak_url: string | null;
   dinlenme_sayisi: number;
   son_dinlenme: string; // ISO timestamp
+  ilk_dinlenme: string | null; // ISO timestamp — şarkının ilk kaydedildiği an
 };
 
 /** Supabase `kullanicilar` tablosundaki bir satır (token saklama). */
 export type Kullanici = {
   id: string; // Spotify user id
   display_name: string | null;
+  avatar_url: string | null; // Spotify profil resmi
   refresh_token: string; // şifreli saklanır
   access_token: string | null; // şifreli, kısa ömürlü
   access_token_expires_at: string | null; // ISO timestamp

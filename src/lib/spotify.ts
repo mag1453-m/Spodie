@@ -91,36 +91,52 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenRes
 export async function getSpotifyProfile(accessToken: string): Promise<{
   id: string;
   display_name: string | null;
+  avatar_url: string | null;
 }> {
   const res = await fetch(`${API_BASE}/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) throw new Error(`Profil alınamadı: ${res.status}`);
   const data = await res.json();
-  return { id: data.id, display_name: data.display_name ?? null };
+  return {
+    id: data.id,
+    display_name: data.display_name ?? null,
+    // Spotify profil resmi (varsa en büyüğü)
+    avatar_url: data.images?.[0]?.url ?? null,
+  };
 }
 
 // ── 5) Kullanıcıyı DB'ye kaydet/güncelle (token'lar şifreli) ─
 export async function upsertKullanici(opts: {
   id: string;
   display_name: string | null;
+  avatar_url: string | null;
   refresh_token: string;
   access_token: string;
   expires_in: number;
 }) {
   const supabase = createServiceSupabase();
   const expiresAt = new Date(Date.now() + opts.expires_in * 1000).toISOString();
-  const { error } = await supabase.from("kullanicilar").upsert(
-    {
-      id: opts.id,
-      display_name: opts.display_name,
-      refresh_token: encrypt(opts.refresh_token),
-      access_token: encrypt(opts.access_token),
-      access_token_expires_at: expiresAt,
-    },
-    { onConflict: "id" }
-  );
-  if (error) throw new Error(`Kullanıcı kaydedilemedi: ${error.message}`);
+
+  const temel = {
+    id: opts.id,
+    display_name: opts.display_name,
+    refresh_token: encrypt(opts.refresh_token),
+    access_token: encrypt(opts.access_token),
+    access_token_expires_at: expiresAt,
+  };
+
+  // Önce avatar_url ile dene; kolon yoksa avatarsız kaydet (giriş kırılmasın).
+  const ilk = await supabase
+    .from("kullanicilar")
+    .upsert({ ...temel, avatar_url: opts.avatar_url }, { onConflict: "id" });
+
+  if (ilk.error) {
+    const yedek = await supabase
+      .from("kullanicilar")
+      .upsert(temel, { onConflict: "id" });
+    if (yedek.error) throw new Error(`Kullanıcı kaydedilemedi: ${yedek.error.message}`);
+  }
 }
 
 // ── 6) Geçerli access token al (gerekirse yenile) ───────────

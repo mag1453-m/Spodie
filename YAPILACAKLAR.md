@@ -14,7 +14,3 @@
 - [ ] Toplam dinleme süresi (dakika/saat)
 - [ ] Günlük/haftalık dinleme grafiği
 - [ ] "Bu hafta en çok" vs "tüm zamanlar" sekmeleri
-
-## Altyapı (sonra)
-- [ ] Netlify deploy + Supabase Cron → 7/24 otomatik takip (bilgisayar kapalıyken de).
-      Hazırlık tamam: netlify.toml ve sql/cron.sql mevcut, sadece deploy + adres bağlama kaldı.

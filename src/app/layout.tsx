@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Spodie — Dinleme Takibi",
+  title: "Spodie",
   description: "Spotify'da ne kadar dinlediğini takip eden kişisel istatistik panosu.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

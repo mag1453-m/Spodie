@@ -73,3 +73,34 @@ export function verifySignedState(state: string | null): boolean {
   const age = Date.now() - Number(ts);
   return Number.isFinite(age) && age >= 0 && age < 15 * 60 * 1000;
 }
+
+// ── Oturum çerezi (Spotify ID'yi imzalı taşır) ──────────────
+// Ayrı şifre/üyelik yok: Spotify girişi = kimlik. Çerez HMAC ile imzalı,
+// kurcalanamaz. İçinde Spotify user id var.
+// Format: base64url(userId).base64url(hmac)
+
+const COOKIE_AD = "spodie_session";
+export const SESSION_COOKIE_NAME = COOKIE_AD;
+
+export function createSession(userId: string): string {
+  const enc = urlSafe(Buffer.from(userId, "utf8"));
+  const hmac = urlSafe(crypto.createHmac("sha256", getKey()).update(enc).digest());
+  return `${enc}.${hmac}`;
+}
+
+/** Çerez geçerliyse Spotify user id'yi döndürür, değilse null. */
+export function readSession(cookie: string | undefined | null): string | null {
+  if (!cookie) return null;
+  const parts = cookie.split(".");
+  if (parts.length !== 2) return null;
+  const [enc, hmac] = parts;
+  const expected = urlSafe(crypto.createHmac("sha256", getKey()).update(enc).digest());
+  const a = Buffer.from(hmac);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  try {
+    return Buffer.from(enc.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+  } catch {
+    return null;
+  }
+}

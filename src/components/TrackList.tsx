@@ -6,6 +6,27 @@ import { TrackRow } from "./TrackRow";
 import type { Dinleme } from "@/lib/types";
 
 /**
+ * "Takibe başladığımız tarih" için kullanıcı dostu metin üretir.
+ * Örn: "3 gün önce başladık · 24 Haziran 2026'dan beri"
+ * Amaç: kullanıcı listeyi "tüm zamanlar Spotify top" sanmasın; bu sayıların
+ * NE ZAMANDAN beri biriktiğini net görsün.
+ */
+function takiptenBeri(baslangic: Date): string {
+  const gun = Math.max(
+    0,
+    Math.floor((Date.now() - baslangic.getTime()) / 86_400_000)
+  );
+  const tarih = baslangic.toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const sure =
+    gun === 0 ? "bugünden" : gun === 1 ? "dünden" : `${gun} gündür · ${tarih}'dan`;
+  return `${sure} beri seni takip ediyor`;
+}
+
+/**
  * Dinleme listesi + özet kartları. KİŞİYE ÖZEL:
  * - Veriyi /api/dinlemeler'den çeker (oturuma göre sadece kendi verisi).
  * - Giriş yoksa "Spotify Bağla" çağrısı gösterir.
@@ -69,6 +90,13 @@ export function TrackList() {
           return ta - tb;
         })[0]
       : null;
+
+  // Takip ne zaman başladı? = en eski kaydın tarihi. Kullanıcı "şu tarihten beri
+  // bunları dinlemişim" diye anlasın diye liste başlığının altına yazılır.
+  const takipBaslangic = ilkSarki
+    ? new Date(ilkSarki.ilk_dinlenme ?? ilkSarki.son_dinlenme)
+    : null;
+  const takipMetni = takipBaslangic ? takiptenBeri(takipBaslangic) : null;
 
   // Giriş yapılmamışsa: liste/kartlar yerine "Spotify Bağla" çağrısı göster
   if (!yukleniyor && !girisVar) {
@@ -160,9 +188,16 @@ export function TrackList() {
 
       {/* Liste */}
       <section className="animate-fadeup delay-2 rounded-2xl border border-spodie-border bg-spodie-surface p-3 sm:p-5">
-        <h2 className="px-3 pb-3 text-lg font-semibold text-spodie-text">
-          En çok dinlenenler
-        </h2>
+        <div className="px-3 pb-3">
+          <h2 className="text-lg font-semibold text-spodie-text">
+            En çok dinlediklerin
+          </h2>
+          {takipMetni && (
+            <p className="mt-0.5 text-xs text-spodie-muted">
+              Spodie {takipMetni}
+            </p>
+          )}
+        </div>
 
         {yukleniyor ? (
           // Shimmer iskelet — düz "Yükleniyor" yerine şık yer tutucu satırlar
